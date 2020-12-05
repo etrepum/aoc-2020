@@ -23,6 +23,7 @@ isTree s n = maybe false (_ == '#') $ charAt (mod n (String.length s)) s
 type TreeAcc =
   { col :: Int
   , row :: Int
+  -- 31 bits just isn't enough!
   , trees :: Number
   }
 
