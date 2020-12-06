@@ -3,9 +3,10 @@ module Main where
 import Prelude
 
 import Data.Array.NonEmpty as NonEmpty
-import Data.Foldable (sum)
+import Data.Foldable (foldMap)
 import Data.Maybe (fromMaybe)
-import Data.Newtype (class Newtype, ala)
+import Data.Monoid.Additive (Additive(..))
+import Data.Newtype (class Newtype, ala, alaF)
 import Data.Semigroup.Foldable (foldMap1)
 import Data.Set (Set)
 import Data.Set as Set
@@ -50,5 +51,5 @@ b"""
 main :: Effect Unit
 main = launchAff_ do
   groups <- parseGroups <<< fromMaybe defaultInput <$> readStdin
-  log <<< show <<< sum <<< map (Set.size <<< Set.unions) $ groups
-  log <<< show <<< sum <<< map (Set.size <<< intersections) $ groups
+  log <<< show <<< alaF Additive foldMap (Set.size <<< Set.unions) $ groups
+  log <<< show <<< alaF Additive foldMap (Set.size <<< intersections) $ groups
