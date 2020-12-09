@@ -12,7 +12,7 @@ import Data.Int as Int
 import Data.Maybe (Maybe(..), fromMaybe, maybe)
 import Data.Maybe.First (First(..))
 import Data.Newtype (alaF)
-import Data.Set (empty, insert, member)
+import Data.Set (Set, empty, insert, member)
 import Effect (Effect)
 import Effect.Aff (launchAff_)
 import Effect.Class (liftEffect)
@@ -34,9 +34,13 @@ instance showOp :: Show Op where
 
 type Instruction = { op :: Op, arg :: Int }
 type Processor = { ip :: Int, acc :: Int }
+type ExecState = { proc :: Processor, seen :: Set Int }
+
+initialState :: ExecState
+initialState = { proc: { ip: 0, acc: 0 }, seen: empty }
 
 runUntilLoop :: Array Instruction -> Int
-runUntilLoop instructions = tailRec go { proc: { ip: 0, acc: 0 }, seen: empty }
+runUntilLoop instructions = tailRec go initialState
   where
     go { proc: p, seen: s } = maybe (Done p.acc) Loop do
       let ip = p.ip
@@ -45,7 +49,7 @@ runUntilLoop instructions = tailRec go { proc: { ip: 0, acc: 0 }, seen: empty }
       pure { proc: p', seen: insert ip s }
 
 runOrFail :: Array Instruction -> Maybe Int
-runOrFail instructions = tailRec go { proc: { ip: 0, acc: 0 }, seen: empty }
+runOrFail instructions = tailRec go initialState
   where
     go { proc: p, seen: s } = 
       if member p.ip s then Done Nothing
@@ -111,5 +115,4 @@ main = launchAff_ do
   inputText <- fromMaybe defaultInput <$> readStdin
   input <- either (liftEffect <<< throw <<< show) pure $ runParser inputParser inputText
   logShow <<< runUntilLoop $ input
-  logShow <<< runOrFail $ input
   logShow <<< flipUntilSuccess $ input
