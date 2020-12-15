@@ -6,15 +6,20 @@ import Control.Comonad (extract)
 import Control.Fold (Fold)
 import Control.Fold as F
 import Data.Array (mapMaybe, sort)
+import Data.BigInt (BigInt)
+import Data.BigInt as BigInt
 import Data.Foldable (traverse_)
+import Data.Function.Memoize (memoize)
 import Data.Int as Int
-import Data.Maybe (Maybe(..), maybe)
+import Data.Maybe (Maybe(..), fromMaybe, maybe)
 import Data.Pair (Pair(..))
+import Data.Set (Set)
+import Data.Set as Set
 import Data.String (Pattern(..), split)
 import Data.Tuple (Tuple(..), snd)
 import Effect (Effect)
 import Effect.Aff (launchAff_)
-import Effect.Class.Console (logShow)
+import Effect.Class.Console (log, logShow)
 import Input (readStdin)
 
 -- | A `Fold` which yields consecutive pairs
@@ -52,6 +57,16 @@ partOne :: Fold Int Int
 partOne = (*) <$> offBy 1 <*> (map (1 + _) (offBy 3))
   where
     offBy n = pipe (zeroPairs 0) (countOffByN n)
+
+arrangements :: Set Int -> BigInt
+arrangements plugs = maybe zero go $ Set.findMax plugs
+  where
+    go = memoize \n ->
+      case compare n zero of
+        LT -> zero
+        EQ -> one
+        GT -> if Set.member n plugs then recur n else zero
+    recur n = go (n - 3) + go (n - 2) + go (n - 1)
 
 defaultInput :: String
 defaultInput = """28
@@ -92,21 +107,5 @@ main = launchAff_ do
   let input = mapMaybe Int.fromString $ split (Pattern "\n") inputText
   let sortedInput = sort input
   let offBy1 = pipe (zeroPairs 0) (countOffByN 1)
-  logShow sortedInput
-  logShow (F.foldl offBy1 sortedInput)
   logShow (F.foldl partOne sortedInput)
-  -- result <- P.head (
-  --   Pipes.each input >->
-  --   chunks n >->
-  --   P.filter isInvalid >->
-  --   P.map snd
-  -- )
-  -- traverse_ logShow result
-  -- for_ result \target -> do
-  --   maybe2 <- P.head (Pipes.each input >-> findConsecutive target)
-  --   for_ maybe2 \result2 -> do
-  --     logShow result2
-  --     logShow <<< ala Additive foldMap $ result2
-
-
-
+  log <<< BigInt.toString <<< arrangements $ Set.fromFoldable sortedInput
